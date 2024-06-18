@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource hermes {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  DONE
+  CANCELED
+}
+
+model EmployeeUser {
+  id         String   @id @default(cuid())
+  externalId String?  @map("external_id")
+  name       String?
+  username   String
+  email      String?
+  password   String
+  image      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  businessId    String          @map("business_id")
+  passwordReset PasswordReset[]
+
+  @@unique([email])
+  @@unique([username])
+  @@map("employee_users")
+}
+
+model PasswordReset {
+  id        String       @id @default(cuid())
+  token     String       @unique
+  userId    String       @map("user_id")
+  expires   DateTime
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+  user      EmployeeUser @relation(fields: [userId], references: [id])
+
+  @@map("password_resets")
+}
+
+enum PaymentType {
+  PIX
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  paymentId   String      @map("payment_id")
+  userJid     String      @map("user_jid")
+  number      Int         @default(autoincrement()) @map("number")
+  paymentType PaymentType @map("payment_type")
+  amount      Float
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @default(now()) @map("updated_at")
+
+  businessId String @map("business_id")
+
+  status OrderStatus @default(PENDING)
+  items  OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id       String @id @default(uuid())
+  quantity Int
+  price    Float
+  details  String
+
+  orderId String @map("order_id")
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  @@map("order_items")
+}
